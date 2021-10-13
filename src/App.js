@@ -19,8 +19,10 @@ class App extends React.Component {
       celsius: undefined,
       temp_max: undefined,
       temp_min: undefined,
+      humidity: undefined,
       description: "",
       error: false,
+      error2: false,
     };
 
     this.weathericon = {
@@ -77,18 +79,25 @@ class App extends React.Component {
       const api_call = await fetch(
         `http://api.openweathermap.org/data/2.5/weather?q=${city},${country}&appid=${API_key}`
       );
-      const response = await api_call.json();
+      if (api_call.ok) {
+        const response = await api_call.json();
 
-      console.log(response);
+        console.log(response);
 
-      this.setState({
-        city: `${response.name}, ${response.sys.country}`,
-        celsius: this.calCelsius(response.main.temp),
-        temp_max: this.calCelsius(response.main.temp_max),
-        temp_min: this.calCelsius(response.main.temp_min),
-        description: response.weather[0].description,
-      });
-      this.get_Weathericon(this.weathericon, response.weather[0].id);
+        this.setState({
+          city: `${response.name}, ${response.sys.country}`,
+          celsius: this.calCelsius(response.main.temp),
+          temp_max: this.calCelsius(response.main.temp_max),
+          temp_min: this.calCelsius(response.main.temp_min),
+          description: response.weather[0].description,
+          humidity: `Humidity: ${response.main.humidity}%`,
+          error: false,
+          error2: false,
+        });
+        this.get_Weathericon(this.weathericon, response.weather[0].id);
+      } else {
+        this.setState({ error2: true });
+      }
     } else {
       this.setState({ error: true });
     }
@@ -98,7 +107,11 @@ class App extends React.Component {
     return (
       <div>
         <div className="App">
-          <Form loadweather={this.getWeather} error={this.state.error} />
+          <Form
+            loadweather={this.getWeather}
+            error={this.state.error}
+            error2={this.state.error2}
+          />
           <Weather
             city={this.state.city}
             country={this.state.country}
@@ -107,6 +120,7 @@ class App extends React.Component {
             temp_min={this.state.temp_min}
             description={this.state.description}
             weathericon={this.state.icon}
+            humidity={this.state.humidity}
           />
         </div>
       </div>
