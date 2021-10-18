@@ -5,7 +5,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import Weather from "./components/weather.components";
 import Form from "./components/form.component";
 
-const API_key = "051fe9e8f3bf1e3a65cdcfda0281e9af";
+const API_key = "b62f4cb98943a2edfc7c19e573d33932";
 /** api.openweathermap.org/data/2.5/weather?q=London,uk&appid={API key} */
 
 class App extends React.Component {
@@ -23,6 +23,7 @@ class App extends React.Component {
       description: "",
       error: false,
       error2: false,
+      days: undefined,
     };
 
     this.weathericon = {
@@ -44,30 +45,57 @@ class App extends React.Component {
   get_Weathericon(icons, rangeID) {
     switch (true) {
       case rangeID >= 200 && rangeID <= 232:
-        this.setState({ icon: this.weathericon.Thunderstorm });
-        break;
+        return this.weathericon.Thunderstorm;
       case rangeID >= 300 && rangeID <= 321:
-        this.setState({ icon: this.weathericon.Drizzle });
-        break;
+        return this.weathericon.Drizzle;
       case rangeID >= 500 && rangeID <= 531:
-        this.setState({ icon: this.weathericon.Rain });
-        break;
+        return this.weathericon.Rain;
       case rangeID >= 600 && rangeID <= 622:
-        this.setState({ icon: this.weathericon.Snow });
-        break;
+        return this.setState({ icon: this.weathericon.Snow });
       case rangeID >= 701 && rangeID <= 781:
-        this.setState({ icon: this.weathericon.Atmosphere });
-        break;
+        return this.weathericon.Atmosphere;
       case rangeID === 800:
-        this.setState({ icon: this.weathericon.Clear });
-        break;
+        return this.weathericon.Clear;
       case rangeID >= 801 && rangeID <= 804:
-        this.setState({ icon: this.weathericon.Clouds });
-        break;
+        return this.weathericon.Clouds;
       default:
-        this.setState({ icon: this.weathericon.Clouds });
+        return this.weathericon.Clouds;
     }
   }
+
+  // getWeather = async (e) => {
+  //   e.preventDefault();
+
+  //   const city = e.target.elements.city.value;
+  //   const country = e.target.elements.country.value;
+
+  //   if (city && country) {
+  //     const api_call = await fetch(
+  //       `http://api.openweathermap.org/data/2.5/weather?q=${city},${country}&appid=${API_key}`
+  //     );
+  //     if (api_call.ok) {
+  //       const response = await api_call.json();
+
+  //       console.log(response);
+
+  //       this.setState({
+  //         city: `${response.name}, ${response.sys.country}`,
+  //         celsius: this.calCelsius(response.main.temp),
+  //         temp_max: this.calCelsius(response.main.temp_max),
+  //         temp_min: this.calCelsius(response.main.temp_min),
+  //         description: response.weather[0].description,
+  //         humidity: `Humidity: ${response.main.humidity}%`,
+  //         error: false,
+  //         error2: false,
+  //       });
+  //       this.get_Weathericon(this.weathericon, response.weather[0].id);
+  //     } else {
+  //       this.setState({ error2: true });
+  //     }
+  //   } else {
+  //     this.setState({ error: true });
+  //   }
+  // };
 
   getWeather = async (e) => {
     e.preventDefault();
@@ -77,24 +105,42 @@ class App extends React.Component {
 
     if (city && country) {
       const api_call = await fetch(
-        `http://api.openweathermap.org/data/2.5/weather?q=${city},${country}&appid=${API_key}`
+        `https://api.openweathermap.org/data/2.5/forecast?q=${city},${country}&appid=${API_key}`
       );
+
       if (api_call.ok) {
         const response = await api_call.json();
 
-        console.log(response);
+        this.setState({
+          city: `${response.city.name}, ${response.city.country}`,
+        });
+
+        let i = 0;
+        let tab = [];
+
+        while (i < response.list.length) {
+          const raw = response.list[i];
+
+          const day = {
+            date: raw.dt_txt.split(" ")[0],
+            celsius: this.calCelsius(raw.main.temp),
+            temp_max: this.calCelsius(raw.main.temp_max),
+            temp_min: this.calCelsius(raw.main.temp_min),
+            description: raw.weather[0].description,
+            humidity: `Humidity: ${raw.main.humidity}%`,
+            icon: this.get_Weathericon(this.weathericon, raw.weather[0].id),
+          };
+
+          tab.push(day);
+
+          i += 8;
+        }
 
         this.setState({
-          city: `${response.name}, ${response.sys.country}`,
-          celsius: this.calCelsius(response.main.temp),
-          temp_max: this.calCelsius(response.main.temp_max),
-          temp_min: this.calCelsius(response.main.temp_min),
-          description: response.weather[0].description,
-          humidity: `Humidity: ${response.main.humidity}%`,
+          days: tab,
           error: false,
           error2: false,
         });
-        this.get_Weathericon(this.weathericon, response.weather[0].id);
       } else {
         this.setState({ error2: true });
       }
@@ -102,6 +148,16 @@ class App extends React.Component {
       this.setState({ error: true });
     }
   };
+
+  componentDidMount() {
+    // interval getWeather
+
+    console.log("MOUNT");
+  }
+
+  componentWillUnmount() {
+    // clearinteravl
+  }
 
   render() {
     return (
@@ -112,16 +168,25 @@ class App extends React.Component {
             error={this.state.error}
             error2={this.state.error2}
           />
-          <Weather
-            city={this.state.city}
-            country={this.state.country}
-            temp_celsius={this.state.celsius}
-            temp_max={this.state.temp_max}
-            temp_min={this.state.temp_min}
-            description={this.state.description}
-            weathericon={this.state.icon}
-            humidity={this.state.humidity}
-          />
+          {this.state.days && (
+            <div className="row">
+              <div className="name">{this.state.city}</div>
+              {this.state.days.map((day, dayIndex) => (
+                <div key={dayIndex} className="col">
+                  <Weather
+                    date={day.date}
+                    city={day.city}
+                    temp_celsius={day.celsius}
+                    temp_max={day.temp_max}
+                    temp_min={day.temp_min}
+                    description={day.description}
+                    weathericon={day.icon}
+                    humidity={day.humidity}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     );

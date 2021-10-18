@@ -45,7 +45,7 @@ function error() {
 
 function error2() {
   return (
-    <div className="alert alert-danger mx-5" role="alert">
+    <div className="alert alert-warning mx-5" role="alert">
       Unfortunately, there is no such city or country in the database
     </div>
   );
